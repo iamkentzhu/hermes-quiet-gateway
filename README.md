@@ -8,9 +8,9 @@ Silence noisy Hermes lifecycle messages so your chat platform only receives the 
 
 ## What is this / 这是什么
 
-A [Hermes Agent](https://github.com/Maximilian-Winter/Hermes) plugin that intercepts lifecycle status messages before they reach your chat platform — retries, model fallbacks, context compression progress, and API errors all suppressed. The final answer always gets through.
+A [Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/feishu) plugin that intercepts lifecycle status messages before they reach your chat platform — retries, model fallbacks, context compression progress, and API errors all suppressed. The final answer always gets through.
 
-[Hermes Agent](https://github.com/Maximilian-Winter/Hermes) 用户插件，在生命周期状态消息到达聊天平台之前将其拦截——重试、模型切换、上下文压缩进度、API 报错全部屏蔽，只有最终答案正常送达。
+[Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/feishu) Hermes Agent官方的飞书插件，在生命周期状态消息到达聊天平台之前将其拦截——重试、模型切换、上下文压缩进度、API 报错全部屏蔽，只有最终答案正常送达。
 
 ---
 
