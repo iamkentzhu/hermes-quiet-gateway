@@ -1,0 +1,5 @@
+name: quiet-gateway
+version: 1.0.0
+description: "Control lifecycle message visibility. status_mode=quiet (default) suppresses all noise; status_mode=verbose passes everything through for debugging."
+author: kent
+provides_hooks: []
