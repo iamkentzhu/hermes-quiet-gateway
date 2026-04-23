@@ -93,6 +93,10 @@ _BUILTIN_SUPPRESS_PATTERNS: List[str] = [
     r"to compaction",
     r"% of window",
 
+    # Memory persistence notices
+    r"💾\s+memory updated",
+    r"memory updated",
+
     # Other system diagnostics
     r"truncated tool call",
     r"invalid api response",
