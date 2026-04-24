@@ -118,6 +118,26 @@ _BUILTIN_SUPPRESS_PATTERNS: List[str] = [
     r"↻\s+stream interrupted\s*—\s*using delivered content",
     r"↻\s+thinking-only response\s*—\s*prefilling to continue",
     r"↻\s+empty response after tool calls",
+    r"⚠️\s+empty response from model\s*—\s*retrying",
+    r"⚠️\s+empty/malformed response\s*—\s*switching to fallback",
+    r"⚠️\s+model returning empty responses\s*—\s*switching to fallback",
+
+    # Fallback / retry / error lifecycle
+    r"↻\s+switched to fallback:",
+    r"🔄\s+primary model failed\s*—\s*switching to fallback",
+    r"⚠️\s+rate limited\s*—\s*switching to fallback",
+    r"⚠️\s+non-retryable error\s*\(http\s*\d+\)\s*—\s*trying fallback",
+    r"❌\s+non-retryable error\s*\(http\s*\d+\)",
+    r"⚠️\s+max retries\s*\(\d+\).*trying fallback",
+    r"⚠️\s+max retries\s*\(\d+\).*invalid responses",
+    r"❌\s+max retries\s*\(\d+\).*(invalid responses|retries)",
+    r"❌\s+rate limited after\s+\d+\s+retries",
+    r"❌\s+api failed after\s+\d+\s+retries",
+    r"⏱️\s+rate limited\.\s*waiting",
+    r"⚠️\s+request payload too large.*compression attempt",
+    r"🗜️\s+compressed\s+\d+\s*→\s*\d+\s+messages",
+    r"🗜️\s+context too large.*compressing",
+    r"🔄\s+reconnected\s*—\s*resuming",
 
     # Other system diagnostics
     r"truncated tool call",
