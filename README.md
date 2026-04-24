@@ -49,6 +49,42 @@ Restart your gateway after install:
 hermes gateway restart
 ```
 
+> The installer also adds `quiet-gateway` to `plugins.enabled` in `~/.hermes/config.yaml`. Hermes plugins are **opt-in** — they only load when listed there. See [Opt-in requirement](#opt-in-requirement--opt-in-启用要求) below.
+>
+> 安装脚本会自动把 `quiet-gateway` 加到 `~/.hermes/config.yaml` 的 `plugins.enabled`。Hermes 插件是 **opt-in** —— 未出现在这个列表里的插件不会被加载。详见下文 [Opt-in 启用要求](#opt-in-requirement--opt-in-启用要求)。
+
+---
+
+## Opt-in requirement / Opt-in 启用要求
+
+Hermes loads **only** plugins listed under `plugins.enabled` in `~/.hermes/config.yaml`. If the key is missing or empty, nothing loads — you won't see any errors, the plugin is simply ignored.
+
+Hermes 只加载 `~/.hermes/config.yaml` 中 `plugins.enabled` 列表里的插件。如果这个字段缺失或为空，插件会被静默忽略，**不会有任何报错**。
+
+The installer adds `quiet-gateway` automatically. If you install by hand, or if your config gets reset / migrated, make sure it's there:
+
+安装脚本会自动添加；如果你是手动安装，或 config 被重置/迁移，请确认配置里有这一段：
+
+```yaml
+# ~/.hermes/config.yaml
+plugins:
+  enabled:
+  - quiet-gateway
+```
+
+**Verify after restart / 重启后验证：**
+
+```bash
+grep quiet-gateway ~/.hermes/logs/agent.log | tail -3
+# Expected / 应该看到:
+# [quiet-gateway] Patched GatewayRunner._run_agent — filtering all platforms
+# [quiet-gateway] Registered (status_mode=quiet) — will suppress lifecycle noise on next turn
+```
+
+If you don't see these lines, the plugin is not being loaded — re-check `plugins.enabled`.
+
+如果没有这些日志，说明插件没有加载 —— 请检查 `plugins.enabled` 配置。
+
 ---
 
 ## Modes / 两种模式
