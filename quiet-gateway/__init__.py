@@ -93,9 +93,24 @@ _BUILTIN_SUPPRESS_PATTERNS: List[str] = [
     r"to compaction",
     r"% of window",
 
-    # Memory persistence notices
+    # Memory / profile persistence notices
     r"💾\s+memory updated",
     r"memory updated",
+    r"💾\s+user profile updated",
+    r"user profile updated",
+    r"💾\s+skill[s]?\s+updated",
+
+    # Gateway shutdown / restart lifecycle
+    r"⚠️\s+gateway\s+(shutting down|restarting)",
+    r"your current task will be interrupted",
+    r"⏳\s+gateway\s+(is\s+)?(shutting down|restarting)",
+    r"⏳\s+gateway\s+is\s+\w+\s+and is not accepting",
+    r"⏳\s+draining\s+\d+\s+active agent",
+    r"⏳\s+agent is running\s*—",
+
+    # Long-running / inactivity status pings
+    r"⏳\s+still working\.\.\.",
+    r"⚠️\s+no activity for\s+\d+\s+min",
 
     # Other system diagnostics
     r"truncated tool call",
@@ -271,6 +286,97 @@ def _patch_ai_agent_emit_status(
     logger.info("[quiet-gateway] Patched AIAgent._emit_status — lifecycle noise suppressed")
 
 
+def _patch_adapter_send(
+    should_suppress: Callable[[str], bool],
+    enabled_platforms: Optional[List[str]],
+) -> None:
+    """Patch adapter.send on known platform adapters.
+
+    These lifecycle notices bypass AIAgent._emit_status and go straight to
+    adapter.send():
+      - ⏳ Still working... (gateway.run._notify_long_running)
+      - ⚠️ Gateway shutting down (gateway.run._announce_shutdown)
+      - ⚠️ No activity for N min (gateway.run stall warning)
+      - 💾 Memory/User profile updated (via background_review_callback -> adapter.send)
+
+    We wrap adapter.send to drop messages matching the suppress patterns,
+    but only the exact lifecycle strings (the regex list is strict-anchored,
+    so the agent's actual reply text is not at risk).
+    """
+    adapter_modules = [
+        ("gateway.platforms.feishu", "FeishuAdapter"),
+        ("gateway.platforms.telegram", "TelegramAdapter"),
+        ("gateway.platforms.slack", "SlackAdapter"),
+        ("gateway.platforms.discord", "DiscordAdapter"),
+    ]
+
+    for mod_name, cls_name in adapter_modules:
+        try:
+            import importlib
+            mod = importlib.import_module(mod_name)
+        except ImportError:
+            continue
+
+        cls = getattr(mod, cls_name, None)
+        if cls is None:
+            continue
+
+        platform_name = cls_name.replace("Adapter", "").lower()
+        if enabled_platforms is not None and platform_name not in enabled_platforms:
+            continue
+
+        original_send = getattr(cls, "send", None)
+        if original_send is None or getattr(original_send, "_quiet_gateway_patched", False):
+            continue
+
+        if asyncio.iscoroutinefunction(original_send):
+            @functools.wraps(original_send)
+            async def _patched_send_async(
+                self_adapter,
+                chat_id,
+                content="",
+                *args,
+                _orig=original_send,
+                _plat=platform_name,
+                **kwargs,
+            ):
+                text = content if isinstance(content, str) else str(content or "")
+                if text and should_suppress(text):
+                    logger.debug(
+                        "[quiet-gateway] suppressed adapter.send on %s: %.120s",
+                        _plat, text,
+                    )
+                    return None
+                return await _orig(self_adapter, chat_id, content, *args, **kwargs)
+
+            _patched_send_async._quiet_gateway_patched = True
+            cls.send = _patched_send_async  # type: ignore[method-assign]
+        else:
+            @functools.wraps(original_send)
+            def _patched_send_sync(
+                self_adapter,
+                chat_id,
+                content="",
+                *args,
+                _orig=original_send,
+                _plat=platform_name,
+                **kwargs,
+            ):
+                text = content if isinstance(content, str) else str(content or "")
+                if text and should_suppress(text):
+                    logger.debug(
+                        "[quiet-gateway] suppressed adapter.send on %s: %.120s",
+                        _plat, text,
+                    )
+                    return None
+                return _orig(self_adapter, chat_id, content, *args, **kwargs)
+
+            _patched_send_sync._quiet_gateway_patched = True
+            cls.send = _patched_send_sync  # type: ignore[method-assign]
+
+        logger.info("[quiet-gateway] Patched %s.send — lifecycle adapter.send noise suppressed", cls_name)
+
+
 def register(ctx) -> None:
     """Hermes plugin entry point."""
     config = _load_config()
@@ -291,3 +397,11 @@ def register(ctx) -> None:
         logger.warning("[quiet-gateway] Failed to patch GatewayRunner — plugin inactive")
     else:
         logger.info("[quiet-gateway] Registered (status_mode=quiet) — will suppress lifecycle noise on next turn")
+
+    # Also patch platform adapters for lifecycle messages that bypass AIAgent._emit_status
+    # (e.g. "⏳ Still working...", "⚠️ Gateway shutting down", "💾 Memory updated").
+    platforms_raw = config.get("platforms")
+    enabled_platforms: Optional[List[str]] = None
+    if isinstance(platforms_raw, list) and platforms_raw:
+        enabled_platforms = [str(p).lower() for p in platforms_raw]
+    _patch_adapter_send(_build_filter(config), enabled_platforms)
