@@ -112,6 +112,13 @@ _BUILTIN_SUPPRESS_PATTERNS: List[str] = [
     r"⏳\s+still working\.\.\.",
     r"⚠️\s+no activity for\s+\d+\s+min",
 
+    # Empty / malformed model response recovery
+    r"⚠️\s+model returned empty after tool calls",
+    r"nudging to continue",
+    r"↻\s+stream interrupted\s*—\s*using delivered content",
+    r"↻\s+thinking-only response\s*—\s*prefilling to continue",
+    r"↻\s+empty response after tool calls",
+
     # Other system diagnostics
     r"truncated tool call",
     r"invalid api response",
