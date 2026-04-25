@@ -93,12 +93,18 @@ _BUILTIN_SUPPRESS_PATTERNS: List[str] = [
     r"to compaction",
     r"% of window",
 
-    # Memory / profile persistence notices
+    # Memory / profile / skill persistence notices (background review summaries)
+    # Covers both short summaries ("Memory updated") and verbatim tool messages
+    # ("Skill 'lark-cli-setup' created.", "Memory 'foo' updated.", etc.)
     r"💾\s+memory updated",
     r"memory updated",
     r"💾\s+user profile updated",
     r"user profile updated",
-    r"💾\s+skill[s]?\s+updated",
+    r"💾\s+skill[s]?\s+(updated|created|removed|replaced)",
+    r"💾\s+skill\s+'[^']*'\s+(created|updated|removed|replaced)",
+    r"skill\s+'[^']*'\s+(created|updated|removed|replaced)",
+    r"memory\s+'[^']*'\s+(created|updated|removed|replaced)",
+    r"memory\s+entry\s+(added|updated|removed|replaced)",
 
     # Gateway shutdown / restart lifecycle
     r"⚠️\s+gateway\s+(shutting down|restarting)",
